@@ -9,6 +9,35 @@ To create a minimum viable product (MVP) for our digital sticky note idea, we ne
 - Note creation, editing, and deletion: Users should be able to create, edit, and delete digital sticky notes.
 - Syncing between the app and the simulated board: Notes created in the app should be synced with the simulated board in real-time.
 
+### Detailed features and Requirements for Software
+
+1. User authentication:
+
+- User registration: Allow users to create a new account with their email address and password.
+- User login: Allow users to log in with their email address and password.
+- User logout: Allow users to log out of their account.
+- Note management:
+
+2. Create notes: Allow users to create a new note with a title and content.
+- Edit notes: Allow users to edit existing notes, updating the title and content.
+- Delete notes: Allow users to delete notes they no longer need.
+- Search/filter notes: Allow users to search their notes by title or content, and filter notes by creation date or other criteria.
+- 
+3. Simulated board:
+
+- Display notes: Show the user's notes on a simulated e-ink board in the app.
+- Sync notes: Automatically sync notes between the app and the simulated board. When a user creates, edits, or deletes a note in the app, the change should be reflected on the simulated board.
+- Customize display: Allow users to choose how many notes are displayed on the simulated board, and in what order (e.g., by creation date, last modified, or alphabetically).
+
+4. Responsiveness:
+
+- Ensure that the app looks good and functions well on various screen sizes and devices.
+
+5. User settings:
+
+- Allow users to manage their account information (e.g., email address, password) and configure app preferences (e.g., display options for the simulated board).
+These features should provide a solid foundation for your MVP. As you develop and test the app, you may identify additional features or improvements to include. Remember to prioritize user feedback when making decisions about which features to add or modify.
+
 ## Technology Stack
 To create the web app, we can use the following technology stack:
 
