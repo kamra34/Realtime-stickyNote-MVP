@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Groups</title>
+</head>
+<body>
+    <h1>Your Groups</h1>
+    <form method="post" action="{{ url_for('groups') }}">
+        <label for="group_name">Group name:</label>
+        <input type="text" name="group_name" required>
+        <input type="submit" value="Add Group">
+    </form>
+    <ul>
+        {% for group in groups %}
+            <li>{{ group.name }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>

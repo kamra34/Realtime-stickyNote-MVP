@@ -13,7 +13,7 @@ if 'PYTHONANYWHERE_DOMAIN' in os.environ:
     username="imak02",
     password="44pass44",
     hostname="imak02.mysql.eu.pythonanywhere-services.com",
-    databasename="imak02$default",
+    databasename="imak02$users",
     )
     app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
@@ -35,9 +35,18 @@ class User(UserMixin, db.Model):
 class Note(db.Model):
     __tablename__ = 'notes'
     id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=True)
     content = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+class Group(db.Model):
+    __tablename__ = 'groups'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    notes = db.relationship('Note', backref='group', lazy=True)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -97,14 +106,30 @@ def logout():
 def dashboard():
     if request.method == 'POST':
         note_content = request.form.get('content')
-        new_note = Note(content=note_content, user_id=current_user.id)
+        group_id = request.form.get('group_id')
+        new_note = Note(content=note_content, user_id=current_user.id, group_id=group_id)
         db.session.add(new_note)
         db.session.commit()
         flash('Note added successfully')
         return redirect(url_for('dashboard'))
 
     notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.date_created.desc()).all()
-    return render_template('dashboard.html', notes=notes)
+    groups = Group.query.filter_by(user_id=current_user.id).all()
+    return render_template('dashboard.html', notes=notes, groups=groups)
+
+@app.route('/groups', methods=['GET', 'POST'])
+@login_required
+def groups():
+    if request.method == 'POST':
+        group_name = request.form.get('group_name')
+        new_group = Group(name=group_name, user_id=current_user.id)
+        db.session.add(new_group)
+        db.session.commit()
+        flash('Group added successfully')
+        return redirect(url_for('groups'))
+
+    groups = Group.query.filter_by(user_id=current_user.id).all()
+    return render_template('groups.html', groups=groups)
 
 @app.route('/delete_note/<int:note_id>')
 @login_required
