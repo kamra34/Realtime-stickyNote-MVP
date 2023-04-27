@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Welcome to your dashboard, {{ current_user.email }}</h1>
+
+    <form action="{{ url_for('dashboard') }}" method="POST">
+        <label for="content">Add a new note:</label>
+        <textarea name="content" id="content" rows="4" cols="50" required></textarea>
+        <input type="submit" value="Add Note">
+    </form>
+
+    <h2>Your Notes:</h2>
+    {% for note in notes %}
+        <div>
+            <p>{{ note.content }}</p>
+            <small>Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            <a href="{{ url_for('delete_note', note_id=note.id) }}">Delete</a>
+        </div>
+    {% endfor %}
+
+    <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>

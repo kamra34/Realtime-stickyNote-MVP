@@ -1,11 +1,12 @@
-from flask import Flask, render_template, url_for, redirect, flash, request
+from datetime import datetime
+from flask import Flask, render_template, url_for, redirect, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = '0000'
+app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
 db = SQLAlchemy(app)
@@ -16,6 +17,13 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
+    notes = db.relationship('Note', backref='author', lazy=True)
+
+class Note(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -23,7 +31,7 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
-    return 'Hello, World!'
+    return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -70,10 +78,32 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    return 'Welcome to your dashboard, {}'.format(current_user.email)
+    if request.method == 'POST':
+        note_content = request.form.get('content')
+        new_note = Note(content=note_content, user_id=current_user.id)
+        db.session.add(new_note)
+        db.session.commit()
+        flash('Note added successfully')
+        return redirect(url_for('dashboard'))
+
+    notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.date_created.desc()).all()
+    return render_template('dashboard.html', notes=notes)
+
+@app.route('/delete_note/<int:note_id>')
+@login_required
+def delete_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.author != current_user:
+        abort(403)
+
+    db.session.delete(note)
+    db.session.commit()
+    flash('Note deleted successfully')
+    return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
+

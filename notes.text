@@ -1,0 +1,13 @@
+Remember to work on venv
+
+create the venv
+py -3 -m venv .venv
+
+To deal with un-authorized access:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+Activate the venv
+.venv\scripts\activate
+
+setup required libraries
+pip install Flask Flask-SQLAlchemy Flask-Login
