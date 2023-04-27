@@ -5,6 +5,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <title>Register</title>
 </head>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    <ul class="flashes">
+    {% for message in messages %}
+        <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% endwith %}
 <body>
     <h1>Register</h1>
     <form method="post" action="{{ url_for('register') }}">
