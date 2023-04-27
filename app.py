@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from flask import Flask, render_template, url_for, redirect, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -5,9 +6,20 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-
 app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+
+if 'PYTHONANYWHERE_DOMAIN' in os.environ:
+    SQLALCHEMY_DATABASE_URI = "mysql+mysqlconnector://{username}:{password}@{hostname}/{databasename}".format(
+    username="imak02",
+    password="44pass44",
+    hostname="imak02.mysql.eu.pythonanywhere-services.com",
+    databasename="imak02$default",
+    )
+    app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+    app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
