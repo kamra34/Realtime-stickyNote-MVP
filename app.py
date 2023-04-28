@@ -52,6 +52,7 @@ class Note(db.Model):
     content = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=True)
 
 class Group(db.Model):
     __tablename__ = 'groups'
@@ -67,6 +68,10 @@ class Member(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+
+    def __repr__(self):
+        return f"Member('{self.name}', '{self.email}')"
 
 def upgrade():
     op.add_column('members', sa.Column('is_admin', sa.Boolean(), nullable=False, server_default='False'))
@@ -152,10 +157,17 @@ def dashboard():
     groups = Group.query.filter_by(user_id=current_user.id).all()
     members = Member.query.filter_by(user_id=current_user.id).all()
     if not members:
-        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id)
+        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id, is_admin = 1)
         db.session.add(new_member)
         db.session.commit()
         members = [new_member]
+
+    # Add "(admin)" to the admin's name
+    for member in members:
+        if member.email == current_user.email:
+            member.name += "  (admin)"
+            break
+
     return render_template('dashboard.html', notes=notes, groups=groups, members=members)
 
 @app.route('/groups', methods=['GET', 'POST'])
@@ -192,7 +204,7 @@ def members():
             flash('Member added successfully.')
         except IntegrityError:
             db.session.rollback()
-            flash('This email address is already being used by another member. Please use a different email address.', 'error')
+            flash('This email address is already being used. Please use a different email address.', 'error')
         return redirect(url_for('members'))
 
     members = current_user.members
@@ -223,18 +235,20 @@ def add_member():
     flash('Member added successfully.')
     return redirect(url_for('dashboard'))
 
-@app.route('/delete-member/<int:user_id>', methods=['POST'])
+@app.route('/delete-member/<int:member_id>', methods=['POST'])
 @login_required
-def delete_member(user_id):
-    if current_user.is_admin and current_user.id != user_id:
-        member = User.query.get(user_id)
-        db.session.delete(member)
-        db.session.commit()
-        flash('Member deleted successfully')
+def delete_member(member_id):
+    if current_user.is_admin:
+        member = Member.query.get(member_id)
+        if member.is_admin:
+            flash('You cannot delete admin')
+        else:
+            db.session.delete(member)
+            db.session.commit()
+            flash('Member deleted successfully')
     else:
-        flash('You are not authorized to delete admin!')
+        flash('You are not authorized to delete users!')
     return redirect(url_for('members'))
-
 
 @app.route('/delete_note/<int:note_id>')
 @login_required

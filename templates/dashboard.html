@@ -16,7 +16,7 @@
   {% endif %}
 {% endwith %}
 <body>
-    <h1>Welcome to your dashboard, {{ current_user.email }}</h1>
+    <h1>Welcome to your dashboard, {{ current_user.name }}{% if current_user.is_admin %} (admin){% endif %}</h1>
 
     <form action="{{ url_for('dashboard') }}" method="POST">
         <label for="content">Add a new note:</label>
@@ -52,7 +52,7 @@
             {% if note.member %}
                 <p>Member: {{ note.member.name }}</p>
             {% endif %}
-            <small>Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            <small>Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</small>
             <a href="{{ url_for('delete_note', note_id=note.id) }}">Delete</a>
         </div>
     {% endfor %}
@@ -60,7 +60,7 @@
     <h2>Your Members:</h2>
     <ul>
         {% for member in current_user.members %}
-            <li>{{ member.name }} - {{ member.email }}</li>
+            <li>{{ member.name }}{% if member.is_admin %} (admin){% endif %}</li>
         {% endfor %}
     </ul>
 
