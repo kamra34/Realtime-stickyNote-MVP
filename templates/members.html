@@ -16,7 +16,7 @@
 {% endwith %}
 <body>
     <h1>Your Members</h1>
-    <form method="post" action="{{ url_for('members') }}">
+    <form method="post" action="{{ url_for('members', user_id=current_user.id) }}">
         <label for="name">Member Name:</label>
         <input type="text" name="name" required>
         <br>
@@ -32,7 +32,7 @@
         {% for member in members %}
             <li>
                 {{ member.name }} ({{ member.email }})
-                <form method="post" action="{{ url_for('delete_member', member_id=member.id) }}">
+                <form method="post" action="{{ url_for('delete_member', user_id=current_user.id, member_id=member.id) }}">
                     <input type="submit" value="Delete Member">
                 </form>
             </li>

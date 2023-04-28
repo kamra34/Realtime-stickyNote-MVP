@@ -5,6 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
+from alembic import op
+import sqlalchemy as sa
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -32,9 +34,16 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     password = db.Column(db.String(100), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
     notes = db.relationship('Note', backref='author', lazy=True)
     groups = db.relationship('Group', backref='owner', lazy=True)
     members = db.relationship('Member', backref='user', lazy=True)
+
+    def __init__(self, name, email, password, is_admin=False):
+        self.name = name
+        self.email = email
+        self.password = password
+        self.is_admin = is_admin
 
 class Note(db.Model):
     __tablename__ = 'notes'
@@ -59,6 +68,11 @@ class Member(db.Model):
     password = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+def upgrade():
+    op.add_column('members', sa.Column('is_admin', sa.Boolean(), nullable=False, server_default='False'))
+
+def downgrade():
+    op.drop_column('members', 'is_admin')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -74,6 +88,7 @@ def register():
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
+
         user = User.query.filter_by(email=email).first()
 
         if user:
@@ -81,20 +96,15 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password, method='sha256')
-        new_user = User(name=name, email=email, password=hashed_password)
+        is_admin = User.query.count() == 0 # True if first user, False otherwise
+        new_user = User(name=name, email=email, password=hashed_password, is_admin=is_admin)
         db.session.add(new_user)
-        db.session.commit()
-
-        # create a new member with the same details as the user
-        new_member = Member(name=name, email=email, password=hashed_password, user_id=new_user.id)
-        db.session.add(new_member)
         db.session.commit()
 
         flash('Registration successful, please log in')
         return redirect(url_for('login'))
 
     return render_template('register.html')
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -110,7 +120,10 @@ def login():
             return redirect(url_for('login'))
 
         login_user(user, remember=remember)
-        return redirect(url_for('dashboard'))
+        next_page = request.args.get('next')
+        if not next_page or url_parse(next_page).netloc != '':
+            next_page = url_for('dashboard')
+        return redirect(next_page)
 
     return render_template('login.html')
 
@@ -139,12 +152,11 @@ def dashboard():
     groups = Group.query.filter_by(user_id=current_user.id).all()
     members = Member.query.filter_by(user_id=current_user.id).all()
     if not members:
-        new_member = Member(name=current_user.name, email=current_user.email, user_id=current_user.id)
+        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id)
         db.session.add(new_member)
         db.session.commit()
         members = [new_member]
     return render_template('dashboard.html', notes=notes, groups=groups, members=members)
-
 
 @app.route('/groups', methods=['GET', 'POST'])
 @login_required
@@ -211,18 +223,18 @@ def add_member():
     flash('Member added successfully.')
     return redirect(url_for('dashboard'))
 
-@app.route('/members/<int:member_id>/delete', methods=['POST'])
+@app.route('/delete-member/<int:user_id>', methods=['POST'])
 @login_required
-def delete_member(member_id):
-    member = Member.query.get(member_id)
-    if not member:
-        flash('Member not found', 'error')
-        return redirect(url_for('members'))
-
-    db.session.delete(member)
-    db.session.commit()
-    flash('Member deleted successfully', 'success')
+def delete_member(user_id):
+    if current_user.is_admin and current_user.id != user_id:
+        member = User.query.get(user_id)
+        db.session.delete(member)
+        db.session.commit()
+        flash('Member deleted successfully')
+    else:
+        flash('You are not authorized to delete admin!')
     return redirect(url_for('members'))
+
 
 @app.route('/delete_note/<int:note_id>')
 @login_required
