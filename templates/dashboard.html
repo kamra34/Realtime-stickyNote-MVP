@@ -10,6 +10,38 @@
     </ul>
   {% endif %}
 {% endwith %}
+<style>
+    .note-box-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .note-box {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+        flex: 1;
+        min-width: calc(20% - 20px);
+        max-height: 400px;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .note-box-title {
+        font-size: 1.2em;
+        font-weight: italic;
+        margin-bottom: 8px;
+        text-align: center;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    .note {
+        margin-bottom: 1rem;
+    }
+    .note-details {
+    font-size: 0.6em !important;
+    }
+</style>
 <div class="container">
     <h1>Welcome to your dashboard, {{ current_user.name }}{% if current_user.is_admin %} (admin){% endif %}</h1>
 
@@ -20,7 +52,7 @@
         </div>
         <div class="form-group">
             <label for="group_id">Group:</label>
-            <select name="group_id" class="form-control">
+            <select name="group_id" class="form-control">s
                 <option value="">None</option>
                 {% for group in current_user.groups %}
                     <option value="{{ group.id }}">{{ group.name }}</option>
@@ -40,40 +72,41 @@
     </form>
 
     <h2>Your Notes:</h2>
-    {% for note in notes %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <p>{{ note.content }}</p>
-                {% if note.group %}
-                    <p>Group: {{ note.group.name }}</p>
+    <div class="note-box-container">
+        <div class="note-box">
+            <div class="note-box-title">Uncategorized</div>
+            {% for note in notes %}
+                {% if not note.group %}
+                    <div class="note">
+                        <p><strong>{{ note.content }}</strong></p>
+                        <span class="note-details">Created by {{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
+                        <a href="{{ url_for('delete_note', note_id=note.id) }}">Delete</a>
+                    </div>
                 {% endif %}
-                {% if note.member %}
-                    <p>Member: {{ note.member.name }}</p>
-                {% endif %}
-                <small class="text-muted">Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</small>
-                <a href="{{ url_for('delete_note', note_id=note.id) }}" class="btn btn-danger btn-sm">Delete</a>
-            </div>
+            {% endfor %}
         </div>
-    {% endfor %}
-
-    <h2>Your Members:</h2>
-    <ul class="list-group mb-3">
-        {% for member in current_user.members %}
-            <li class="list-group-item">{{ member.name }}{% if member.is_admin %} (admin){% endif %}</li>
-        {% endfor %}
-    </ul>
-
-    <h2>Your Groups:</h2>
-    <ul class="list-group mb-3">
         {% for group in current_user.groups %}
-            <li class="list-group-item">{{ group.name }}</li>
+            <div class="note-box">
+                <div class="note-box-title">{{ group.name }}</div>
+                {% for note in notes %}
+                {% if note.group and note.group.id == group.id %}
+                <div class="note">
+                    <p><strong>{{ note.content }}</strong></p>
+                    <span class="note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
+                    <a href="{{ url_for('delete_note', note_id=note.id) }}"><span class="note-details">Delete</span></a>
+                </div>
+            {% endif %}
         {% endfor %}
-    </ul>
+    </div>
+{% endfor %}
+</div>
 
-    <a href="{{ url_for('members') }}" class="btn btn-info">Manage Members</a>
-    <br>
-    <a href="{{ url_for('groups') }}" class="btn btn-info mt-2">Manage Groups</a>
-    <br>
-    <a href="{{ url_for('logout') }}" class="btn btn-danger mt-2">Logout</a>
+<br>
+<a href="{{ url_for('members') }}" class="btn btn-info">Manage Members</a>
+<br>
+<a href="{{ url_for('groups') }}" class="btn btn-info mt-2">Manage Groups</a>
+<br>
+<a href="{{ url_for('logout') }}" class="btn btn-danger mt-2">Logout</a>
 </div>
 {% endblock %}
+
