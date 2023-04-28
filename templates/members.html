@@ -1,51 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <title>Members</title>
-</head>
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for message in messages %}
-      <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
-<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
     <h1>Your Members</h1>
-    <form method="post" action="{{ url_for('members', user_id=current_user.id) }}">
-        <label for="name">Member Name:</label>
-        <input type="text" name="name" required>
-        <br>
-        <label for="email">Member Email:</label>
-        <input type="email" name="email" required>
-        <br>
-        <label for="password">Member Password:</label>
-        <input type="password" name="password" required>
-        <br>
-        <input type="submit" value="Add Member">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for message in messages %}
+                    <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <form method="post" action="{{ url_for('members', user_id=current_user.id) }}" class="mb-3">
+        <div class="form-group">
+            <label for="name">Member Name:</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Member Email:</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Member Password:</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <input type="submit" value="Add Member" class="btn btn-primary">
     </form>
-    <ul>
-        <ul>
-            {% for member in members %}
-                <li>
-                    {% if member == current_user.members[0] %}
-                        (Admin) {{ member.name }} ({{ member.email }}) 
-                    {% else %}
-                        {{ member.name }} ({{ member.email }})
-                    {% endif %}
-                    {% if member != current_user.members[0] %}
-                        <form method="post" action="{{ url_for('delete_member', user_id=current_user.id, member_id=member.id) }}">
-                            <input type="submit" value="Delete Member">
-                        </form>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+    <ul class="list-unstyled">
+        {% for member in members %}
+            <li class="mb-2">
+                {% if member == current_user.members[0] %}
+                    (Admin) {{ member.name }} ({{ member.email }})
+                {% else %}
+                    {{ member.name }} ({{ member.email }})
+                {% endif %}
+                {% if member != current_user.members[0] %}
+                    <form method="post" action="{{ url_for('delete_member', user_id=current_user.id, member_id=member.id) }}" class="d-inline">
+                        <input type="submit" value="Delete Member" class="btn btn-danger btn-sm">
+                    </form>
+                {% endif %}
+            </li>
+        {% endfor %}
     </ul>
-    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
-</body>
-</html>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

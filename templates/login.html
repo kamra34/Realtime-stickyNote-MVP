@@ -1,33 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <title>Login</title>
-</head>
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-    <ul class="flashes">
-    {% for message in messages %}
-    <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
-    {% endfor %}
-    </ul>
-{% endif %}
-{% endwith %}
-<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
     <h1>Login</h1>
-    <form method="post" action="{{ url_for('login') }}">
-        <label for="email">Email:</label>
-        <input type="email" name="email" required>
-        <br>
-        <label for="password">Password:</label>
-        <input type="password" name="password" required>
-        <br>
-        <label for="remember">Remember me:</label>
-        <input type="checkbox" name="remember">
-        <br>
-        <input type="submit" value="Login">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for message in messages %}
+                    <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <form method="post" action="{{ url_for('login') }}" class="mb-3">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <div class="form-check">
+            <input type="checkbox" name="remember" class="form-check-input" id="remember">
+            <label class="form-check-label" for="remember">Remember me</label>
+        </div>
+        <input type="submit" value="Login" class="btn btn-primary mt-2">
     </form>
     <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
-</body>
-</html>
+</div>
+{% endblock %}

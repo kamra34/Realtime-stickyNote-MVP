@@ -11,3 +11,6 @@ Activate the venv
 
 setup required libraries
 pip install Flask Flask-SQLAlchemy Flask-Login
+
+How to freeze
+pip freeze > requirements. txt

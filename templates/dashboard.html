@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <title>Dashboard</title>
-</head>
+{% extends 'base.html' %}
+
+{% block content %}
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class="flashes">
@@ -15,66 +10,70 @@
     </ul>
   {% endif %}
 {% endwith %}
-<body>
+<div class="container">
     <h1>Welcome to your dashboard, {{ current_user.name }}{% if current_user.is_admin %} (admin){% endif %}</h1>
 
-    <form action="{{ url_for('dashboard') }}" method="POST">
-        <label for="content">Add a new note:</label>
-        <textarea name="content" id="content" rows="4" cols="50" required></textarea>
-        <br>
-        <label for="group_id">Group:</label>
-        <select name="group_id">
-            <option value="">None</option>
-            {% for group in current_user.groups %}
-                <option value="{{ group.id }}">{{ group.name }}</option>
-            {% endfor %}
-        </select>
-        <br>
-        <label for="member_id">Member:</label>
-        <select name="member_id">
-            <option value="">None</option>
-            {% for member in current_user.members %}
-                <option value="{{ member.id }}">{{ member.name }}</option>
-            {% endfor %}
-        </select>
-
-        <br>
-        <input type="submit" value="Add Note">
+    <form action="{{ url_for('dashboard') }}" method="POST" class="mb-3">
+        <div class="form-group">
+            <label for="content">Add a new note:</label>
+            <textarea name="content" id="content" rows="4" class="form-control" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="group_id">Group:</label>
+            <select name="group_id" class="form-control">
+                <option value="">None</option>
+                {% for group in current_user.groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="member_id">Member:</label>
+            <select name="member_id" class="form-control">
+                <option value="">None</option>
+                {% for member in current_user.members %}
+                    <option value="{{ member.id }}">{{ member.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <input type="submit" value="Add Note" class="btn btn-primary">
     </form>
 
     <h2>Your Notes:</h2>
     {% for note in notes %}
-        <div>
-            <p>{{ note.content }}</p>
-            {% if note.group %}
-                <p>Group: {{ note.group.name }}</p>
-            {% endif %}
-            {% if note.member %}
-                <p>Member: {{ note.member.name }}</p>
-            {% endif %}
-            <small>Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</small>
-            <a href="{{ url_for('delete_note', note_id=note.id) }}">Delete</a>
+        <div class="card mb-3">
+            <div class="card-body">
+                <p>{{ note.content }}</p>
+                {% if note.group %}
+                    <p>Group: {{ note.group.name }}</p>
+                {% endif %}
+                {% if note.member %}
+                    <p>Member: {{ note.member.name }}</p>
+                {% endif %}
+                <small class="text-muted">Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</small>
+                <a href="{{ url_for('delete_note', note_id=note.id) }}" class="btn btn-danger btn-sm">Delete</a>
+            </div>
         </div>
     {% endfor %}
 
     <h2>Your Members:</h2>
-    <ul>
+    <ul class="list-group mb-3">
         {% for member in current_user.members %}
-            <li>{{ member.name }}{% if member.is_admin %} (admin){% endif %}</li>
+            <li class="list-group-item">{{ member.name }}{% if member.is_admin %} (admin){% endif %}</li>
         {% endfor %}
     </ul>
 
     <h2>Your Groups:</h2>
-    <ul>
+    <ul class="list-group mb-3">
         {% for group in current_user.groups %}
-            <li>{{ group.name }}</li>
+            <li class="list-group-item">{{ group.name }}</li>
         {% endfor %}
     </ul>
 
-    <a href="{{ url_for('members') }}">Manage Members</a>
+    <a href="{{ url_for('members') }}" class="btn btn-info">Manage Members</a>
     <br>
-    <a href="{{ url_for('groups') }}">Manage Groups</a>
+    <a href="{{ url_for('groups') }}" class="btn btn-info mt-2">Manage Groups</a>
     <br>
-    <a href="{{ url_for('logout') }}">Logout</a>
-</body>
-</html>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger mt-2">Logout</a>
+</div>
+{% endblock %}

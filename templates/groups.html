@@ -1,31 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <title>Groups</title>
-</head>
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for message in messages %}
-      <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
-<body>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
     <h1>Your Groups</h1>
-    <form method="post" action="{{ url_for('groups') }}">
-        <label for="group_name">Group name:</label>
-        <input type="text" name="group_name" required>
-        <input type="submit" value="Add Group">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for message in messages %}
+                    <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <form method="post" action="{{ url_for('groups') }}" class="mb-3">
+        <div class="form-group">
+            <label for="group_name">Group name:</label>
+            <input type="text" name="group_name" class="form-control" required>
+        </div>
+        <input type="submit" value="Add Group" class="btn btn-primary">
     </form>
-    <ul>
+    <ul class="list-unstyled">
         {% for group in groups %}
-            <li>{{ group.name }}</li>
+            <li class="mb-2">{{ group.name }}</li>
         {% endfor %}
     </ul>
-    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
-</body>
-</html>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}
