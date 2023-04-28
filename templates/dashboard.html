@@ -10,7 +10,7 @@
   {% if messages %}
     <ul class="flashes">
       {% for message in messages %}
-        <li>{{ message }}</li>
+      <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
       {% endfor %}
     </ul>
   {% endif %}
@@ -25,10 +25,19 @@
         <label for="group_id">Group:</label>
         <select name="group_id">
             <option value="">None</option>
-            {% for group in groups %}
+            {% for group in current_user.groups %}
                 <option value="{{ group.id }}">{{ group.name }}</option>
             {% endfor %}
         </select>
+        <br>
+        <label for="member_id">Member:</label>
+        <select name="member_id">
+            <option value="">None</option>
+            {% for member in current_user.members %}
+                <option value="{{ member.id }}">{{ member.name }}</option>
+            {% endfor %}
+        </select>
+
         <br>
         <input type="submit" value="Add Note">
     </form>
@@ -40,11 +49,30 @@
             {% if note.group %}
                 <p>Group: {{ note.group.name }}</p>
             {% endif %}
+            {% if note.member %}
+                <p>Member: {{ note.member.name }}</p>
+            {% endif %}
             <small>Created at: {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S') }}</small>
             <a href="{{ url_for('delete_note', note_id=note.id) }}">Delete</a>
         </div>
     {% endfor %}
 
+    <h2>Your Members:</h2>
+    <ul>
+        {% for member in current_user.members %}
+            <li>{{ member.name }} - {{ member.email }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Your Groups:</h2>
+    <ul>
+        {% for group in current_user.groups %}
+            <li>{{ group.name }}</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ url_for('members') }}">Manage Members</a>
+    <br>
     <a href="{{ url_for('groups') }}">Manage Groups</a>
     <br>
     <a href="{{ url_for('logout') }}">Logout</a>

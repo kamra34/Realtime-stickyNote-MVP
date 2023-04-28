@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Members</title>
+</head>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for message in messages %}
+      <li{% if 'error' in message %} class="error"{% endif %}>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+<body>
+    <h1>Your Members</h1>
+    <form method="post" action="{{ url_for('members') }}">
+        <label for="name">Member Name:</label>
+        <input type="text" name="name" required>
+        <br>
+        <label for="email">Member Email:</label>
+        <input type="email" name="email" required>
+        <br>
+        <label for="password">Member Password:</label>
+        <input type="password" name="password" required>
+        <br>
+        <input type="submit" value="Add Member">
+    </form>
+    <ul>
+        {% for member in members %}
+            <li>
+                {{ member.name }} ({{ member.email }})
+                <form method="post" action="{{ url_for('delete_member', member_id=member.id) }}">
+                    <input type="submit" value="Delete Member">
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>

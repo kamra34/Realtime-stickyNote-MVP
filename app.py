@@ -4,6 +4,7 @@ from flask import Flask, render_template, url_for, redirect, flash, request, abo
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -29,8 +30,11 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
     password = db.Column(db.String(100), nullable=False)
     notes = db.relationship('Note', backref='author', lazy=True)
+    groups = db.relationship('Group', backref='owner', lazy=True)
+    members = db.relationship('Member', backref='user', lazy=True)
 
 class Note(db.Model):
     __tablename__ = 'notes'
@@ -47,6 +51,14 @@ class Group(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     notes = db.relationship('Note', backref='group', lazy=True)
 
+class Member(db.Model):
+    __tablename__ = 'members'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -59,6 +71,7 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
@@ -68,14 +81,20 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password, method='sha256')
-        new_user = User(email=email, password=hashed_password)
+        new_user = User(name=name, email=email, password=hashed_password)
         db.session.add(new_user)
+        db.session.commit()
+
+        # create a new member with the same details as the user
+        new_member = Member(name=name, email=email, password=hashed_password, user_id=new_user.id)
+        db.session.add(new_member)
         db.session.commit()
 
         flash('Registration successful, please log in')
         return redirect(url_for('login'))
 
     return render_template('register.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -107,7 +126,10 @@ def dashboard():
     if request.method == 'POST':
         note_content = request.form.get('content')
         group_id = request.form.get('group_id')
-        new_note = Note(content=note_content, user_id=current_user.id, group_id=group_id)
+        member_id = request.form.get('member_id')
+        if not member_id:
+            member_id = current_user.members[0].id
+        new_note = Note(content=note_content, user_id=current_user.id, group_id=group_id, member_id=member_id)
         db.session.add(new_note)
         db.session.commit()
         flash('Note added successfully')
@@ -115,7 +137,14 @@ def dashboard():
 
     notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.date_created.desc()).all()
     groups = Group.query.filter_by(user_id=current_user.id).all()
-    return render_template('dashboard.html', notes=notes, groups=groups)
+    members = Member.query.filter_by(user_id=current_user.id).all()
+    if not members:
+        new_member = Member(name=current_user.name, email=current_user.email, user_id=current_user.id)
+        db.session.add(new_member)
+        db.session.commit()
+        members = [new_member]
+    return render_template('dashboard.html', notes=notes, groups=groups, members=members)
+
 
 @app.route('/groups', methods=['GET', 'POST'])
 @login_required
@@ -130,6 +159,70 @@ def groups():
 
     groups = Group.query.filter_by(user_id=current_user.id).all()
     return render_template('groups.html', groups=groups)
+
+@app.route('/members', methods=['GET', 'POST'])
+@login_required
+def members():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        hashed_password = generate_password_hash(password, method='sha256')
+
+        if len(current_user.members) >= 5:
+            flash("You can only add up to 5 members.")
+            return redirect(url_for('members'))
+
+        new_member = Member(name=name, email=email, password=hashed_password, user_id=current_user.id)
+        try:
+            db.session.add(new_member)
+            db.session.commit()
+            flash('Member added successfully.')
+        except IntegrityError:
+            db.session.rollback()
+            flash('This email address is already being used by another member. Please use a different email address.', 'error')
+        return redirect(url_for('members'))
+
+    members = current_user.members
+    return render_template('members.html', members=members)
+
+@app.route('/add_member', methods=['POST'])
+@login_required
+def add_member():
+    if len(current_user.members) >= 5:
+        flash('You can only add up to 5 members.')
+        return redirect(url_for('dashboard'))
+
+    member_name = request.form.get('member_name') # Add this line to get the member's name from the form
+    if not member_name:
+        flash('Please enter a name for the new member.')
+        return redirect(url_for('dashboard'))
+    member_email = request.form.get('member_email')
+    member_password = request.form.get('password')
+    
+    existing_member = Member.query.filter_by(email=member_email).first()
+    if existing_member:
+        flash('This email is already registered as a member.')
+        return redirect(url_for('dashboard'))
+
+    new_member = Member(name=member_name, email=member_email, password=member_password, user_id=current_user.id) # Add the member's name to the constructor
+    db.session.add(new_member)
+    db.session.commit()
+    flash('Member added successfully.')
+    return redirect(url_for('dashboard'))
+
+@app.route('/members/<int:member_id>/delete', methods=['POST'])
+@login_required
+def delete_member(member_id):
+    member = Member.query.get(member_id)
+    if not member:
+        flash('Member not found', 'error')
+        return redirect(url_for('members'))
+
+    db.session.delete(member)
+    db.session.commit()
+    flash('Member deleted successfully', 'success')
+    return redirect(url_for('members'))
 
 @app.route('/delete_note/<int:note_id>')
 @login_required
