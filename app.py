@@ -263,6 +263,26 @@ def delete_note(note_id):
     flash('Note deleted successfully')
     return redirect(url_for('dashboard'))
 
+@app.route('/delete_group/<int:group_id>', methods=['GET', 'POST'])
+@login_required
+def delete_group(group_id):
+    group = Group.query.get_or_404(group_id)
+
+    if request.method == 'POST':
+        if request.form.get('confirm') == 'yes':
+            notes = Note.query.filter_by(group_id=group_id).all()
+
+            if notes:
+                flash('Cannot delete group, please delete notes assigned to this group first', 'error')
+            else:
+                db.session.delete(group)
+                db.session.commit()
+                flash('Group deleted successfully')
+
+            return redirect(url_for('groups'))
+
+    return render_template('delete_group.html', group=group)
+
 if __name__ == '__main__':
     app.run(debug=True)
 

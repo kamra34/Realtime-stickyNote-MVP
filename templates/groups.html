@@ -21,7 +21,32 @@
     </form>
     <ul class="list-unstyled">
         {% for group in groups %}
-            <li class="mb-2">{{ group.name }}</li>
+            <li class="mb-2">{{ group.name }}
+              {% if group.notes %}
+                  ({{ group.notes|length }} notes) 
+              {% endif %} 
+              <button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirm-delete-{{ group.id }}">Delete</button></li>
+            <!-- Confirm Delete Modal -->
+            <div class="modal fade" id="confirm-delete-{{ group.id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Delete Group?</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete the group "{{ group.name }}"?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                            <form action="{{ url_for('delete_group', group_id=group.id) }}" method="post">
+                                <input type="hidden" name="confirm" value="yes">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% endfor %}
     </ul>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>

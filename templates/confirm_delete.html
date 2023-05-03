@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Delete {{ item_name }}</h1>
+    <p>Are you sure you want to delete {{ item_name }}?</p>
+    <form method="post" action="{{ action_url }}">
+        <div class="form-group">
+            <label for="confirm">Type "yes" to confirm:</label>
+            <input type="text" name="confirm" class="form-control">
+        </div>
+        <input type="submit" value="Delete" class="btn btn-danger">
+        <a href="{{ url_for('groups') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
