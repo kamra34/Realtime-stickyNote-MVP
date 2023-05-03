@@ -102,8 +102,7 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password, method='sha256')
-        is_admin = User.query.count() == 0 # True if first user, False otherwise
-        new_user = User(name=name, email=email, password=hashed_password, is_admin=is_admin)
+        new_user = User(name=name, email=email, password=hashed_password, is_admin=True)
         db.session.add(new_user)
         db.session.commit()
 
