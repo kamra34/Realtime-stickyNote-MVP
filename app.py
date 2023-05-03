@@ -342,7 +342,7 @@ def delete_member(user_id, member_id):
 @login_required
 def delete_note(note_id):
     note = Note.query.get_or_404(note_id)
-    if note.author != current_user:
+    if note.user_id != current_user.id and (isinstance(current_user, Member) and note.user_id != current_user.user.id):
         abort(403)
     db.session.delete(note)
     db.session.commit()
