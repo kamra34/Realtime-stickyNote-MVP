@@ -1,0 +1,5 @@
+from app import app, db, Member
+
+with app.app_context():
+    member = Member.query.filter_by(email='1@1.1').first()
+    print(member)

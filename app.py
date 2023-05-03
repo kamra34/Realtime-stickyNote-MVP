@@ -2,11 +2,13 @@ import os
 from datetime import datetime
 from flask import Flask, render_template, url_for, redirect, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 from alembic import op
 import sqlalchemy as sa
+from functools import wraps
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -24,9 +26,16 @@ if 'PYTHONANYWHERE_DOMAIN' in os.environ:
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
+class Anonymous(AnonymousUserMixin):
+    def __init__(self):
+        self.is_admin = False
+
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
+# Set the Anonymous class as the AnonymousUser for your LoginManager
+#login_manager.anonymous_user = Anonymous
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -34,16 +43,27 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     password = db.Column(db.String(100), nullable=False)
-    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    role = db.Column(db.String(10), nullable=False, default='member')
     notes = db.relationship('Note', backref='author', lazy=True)
     groups = db.relationship('Group', backref='owner', lazy=True)
     members = db.relationship('Member', backref='user', lazy=True)
 
-    def __init__(self, name, email, password, is_admin=False):
+    def __init__(self, name, email, password, role='member'):
         self.name = name
         self.email = email
         self.password = password
-        self.is_admin = is_admin
+        self.role = role
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+    
+    def get_id(self):
+        return str(self.id)
+
+
 
 class Note(db.Model):
     __tablename__ = 'notes'
@@ -61,7 +81,7 @@ class Group(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     notes = db.relationship('Note', backref='group', lazy=True)
 
-class Member(db.Model):
+class Member(UserMixin, db.Model):
     __tablename__ = 'members'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -73,6 +93,15 @@ class Member(db.Model):
 
     def __repr__(self):
         return f"Member('{self.name}', '{self.email}')"
+    
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+    
+    def get_id(self):
+        return f"member_{str(self.id)}"
 
 def upgrade():
     op.add_column('members', sa.Column('is_admin', sa.Boolean(), nullable=False, server_default='False'))
@@ -82,7 +111,16 @@ def downgrade():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    if user_id.startswith("member_"):
+        member_id = int(user_id.split("_")[1])
+        return Member.query.get(member_id)
+    else:
+        return User.query.get(int(user_id))
+    
+@login_manager.unauthorized_handler
+def unauthorized():
+    flash("Please log in to access this page.", "danger")
+    return redirect(url_for('login'))
 
 @app.route('/')
 def home():
@@ -102,35 +140,55 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password, method='sha256')
-        new_user = User(name=name, email=email, password=hashed_password, is_admin=True)
+        new_user = User(name=name, email=email, password=hashed_password, role='admin')
         db.session.add(new_user)
         db.session.commit()
 
         flash('Registration successful, please log in')
+        
+        # Log out the current user before redirecting to the login page
+        logout_user()
         return redirect(url_for('login'))
 
     return render_template('register.html')
 
+def validate_login(email, password):
+    user = User.query.filter_by(email=email).first()
+    if user and user.check_password(password):
+        return user
+    else:
+        member = Member.query.filter_by(email=email).first()
+        if member and member.check_password(password):
+            return member
+    return None
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        remember = True if request.form.get('remember') else False
-
+        email = request.form['email']
+        password = request.form['password']
         user = User.query.filter_by(email=email).first()
 
-        if not user or not check_password_hash(user.password, password):
-            flash('Please check your login details and try again')
-            return redirect(url_for('login'))
-
-        login_user(user, remember=remember)
-        next_page = request.args.get('next')
-        if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('dashboard')
-        return redirect(next_page)
+        if user is None:
+            member = Member.query.filter_by(email=email).first()
+            if member is None:
+                flash('Login Unsuccessful. Please check your email and password', 'danger')
+                return redirect(url_for('login'))
+            elif member.check_password(password):
+                print("Logging in as Member:", member)
+                login_user(member)
+                next_page = request.args.get('next')
+                return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+        elif user.check_password(password):
+            print("Logging in as User:", user)
+            login_user(user)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+        else:
+            flash('Login Unsuccessful. Please check your email and password', 'danger')
 
     return render_template('login.html')
+
 
 @app.route('/logout')
 @login_required
@@ -146,27 +204,36 @@ def dashboard():
         group_id = request.form.get('group_id')
         member_id = request.form.get('member_id')
         if not member_id:
-            member_id = current_user.members[0].id
+            if isinstance(current_user, User):
+                member_id = current_user.members[0].id
+            else:
+                member_id = current_user.id
         new_note = Note(content=note_content, user_id=current_user.id, group_id=group_id, member_id=member_id)
         db.session.add(new_note)
         db.session.commit()
         flash('Note added successfully')
         return redirect(url_for('dashboard'))
 
-    notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.date_created.desc()).all()
-    groups = Group.query.filter_by(user_id=current_user.id).all()
-    members = Member.query.filter_by(user_id=current_user.id).all()
+    if isinstance(current_user, User):
+        members = current_user.members
+    else:
+        members = Member.query.filter_by(user_id=current_user.user.id).all()
+
     if not members:
-        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id, is_admin = 1)
+        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id, is_admin =1)
         db.session.add(new_member)
         db.session.commit()
         members = [new_member]
 
-    # Add "(admin)" to the admin's name
-    for member in members:
-        if member.email == current_user.email:
-            member.name += "  (admin)"
-            break
+    if isinstance(current_user, User):
+        user_id = current_user.id
+    else:
+        user_id = current_user.user.id
+
+    # Update the notes and groups queries to display only notes and groups related to the current user
+    groups = Group.query.filter_by(user_id=user_id).all()
+    group_ids = [group.id for group in groups]
+    notes = Note.query.filter(Note.group_id.in_(group_ids)).order_by(Note.date_created.desc()).all()
 
     return render_template('dashboard.html', notes=notes, groups=groups, members=members)
 
@@ -175,7 +242,11 @@ def dashboard():
 def groups():
     if request.method == 'POST':
         group_name = request.form.get('group_name')
-        new_group = Group(name=group_name, user_id=current_user.id)
+        if isinstance(current_user, User):
+            user_id = current_user.id
+        else:
+            user_id = current_user.user.id
+        new_group = Group(name=group_name, user_id=user_id)
         db.session.add(new_group)
         db.session.commit()
         flash('Group added successfully')
@@ -207,8 +278,24 @@ def members():
             flash('This email address is already being used. Please use a different email address.', 'error')
         return redirect(url_for('members'))
 
-    members = current_user.members
-    return render_template('members.html', members=members)
+    if isinstance(current_user, User):
+        # The current user is an admin
+        members = current_user.members
+        return render_template('members.html', members=members, admin=True)
+    else:
+        # The current user is a member
+        members = Member.query.filter_by(user_id=current_user.user.id).all()
+        return render_template('members.html', members=members, admin=False)
+    
+@app.route('/view_members', methods=['GET'])
+@login_required
+def view_members():
+    if isinstance(current_user, User):
+        members = current_user.members
+    else:
+        members = Member.query.filter_by(user_id=current_user.user.id).all()
+
+    return render_template('view_members.html', members=members)
 
 @app.route('/add_member', methods=['POST'])
 @login_required
@@ -235,20 +322,21 @@ def add_member():
     flash('Member added successfully.')
     return redirect(url_for('dashboard'))
 
-@app.route('/delete-member/<int:member_id>', methods=['POST'])
+@app.route('/delete-member/<int:user_id>/<int:member_id>', methods=['POST'])
 @login_required
-def delete_member(member_id):
-    if current_user.is_admin:
+def delete_member(user_id, member_id):
+    if current_user.role == "admin":
         member = Member.query.get(member_id)
         if member.is_admin:
-            flash('You cannot delete admin')
+            flash('You cannot delete an admin user!')
         else:
             db.session.delete(member)
             db.session.commit()
             flash('Member deleted successfully')
     else:
         flash('You are not authorized to delete users!')
-    return redirect(url_for('members'))
+    return redirect(url_for('members', user_id=user_id))
+
 
 @app.route('/delete_note/<int:note_id>')
 @login_required
@@ -256,11 +344,11 @@ def delete_note(note_id):
     note = Note.query.get_or_404(note_id)
     if note.author != current_user:
         abort(403)
-
     db.session.delete(note)
     db.session.commit()
     flash('Note deleted successfully')
     return redirect(url_for('dashboard'))
+
 
 @app.route('/delete_group/<int:group_id>', methods=['GET', 'POST'])
 @login_required

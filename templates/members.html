@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container">
-    <h1>Your Members</h1>
+    <h1>New Member</h1>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <ul class="flashes">
@@ -28,6 +28,10 @@
         <input type="submit" value="Add Member" class="btn btn-primary">
     </form>
     <ul class="list-unstyled">
+
+        <br>
+        <h1>Current Members</h1>
+        <br>
         {% for member in members %}
             <li class="mb-2">
                 {% if member == current_user.members[0] %}
@@ -36,13 +40,14 @@
                     {{ member.name }} ({{ member.email }})
                 {% endif %}
                 {% if member != current_user.members[0] %}
-                    <form method="post" action="{{ url_for('delete_member', user_id=current_user.id, member_id=member.id) }}" class="d-inline">
+                <form method="post" action="{{ url_for('delete_member', user_id=current_user.id, member_id=member.id) }}" class="d-inline">
                         <input type="submit" value="Delete Member" class="btn btn-danger btn-sm">
                     </form>
                 {% endif %}
             </li>
         {% endfor %}
     </ul>
+    <br>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
 </div>
 {% endblock %}

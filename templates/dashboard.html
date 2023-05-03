@@ -43,7 +43,7 @@
     }
 </style>
 <div class="container">
-    <h1>Welcome to your dashboard, {{ current_user.name }}{% if current_user.is_admin %} (admin){% endif %}</h1>
+    <h1>Welcome to your dashboard, {{ current_user.name }}{% if current_user.role == 'admin' %} (admin){% endif %}</h1>
 
     <form action="{{ url_for('dashboard') }}" method="POST" class="mb-3">
         <div class="form-group">
@@ -52,9 +52,9 @@
         </div>
         <div class="form-group">
             <label for="group_id">Group:</label>
-            <select name="group_id" class="form-control">s
+            <select name="group_id" class="form-control">
                 <option value="">None</option>
-                {% for group in current_user.groups %}
+                {% for group in groups %}
                     <option value="{{ group.id }}">{{ group.name }}</option>
                 {% endfor %}
             </select>
@@ -63,7 +63,7 @@
             <label for="member_id">Member:</label>
             <select name="member_id" class="form-control">
                 <option value="">None</option>
-                {% for member in current_user.members %}
+                {% for member in members %}
                     <option value="{{ member.id }}">{{ member.name }}</option>
                 {% endfor %}
             </select>
@@ -85,28 +85,33 @@
                 {% endif %}
             {% endfor %}
         </div>
-        {% for group in current_user.groups %}
+        {% for group in groups %}
             <div class="note-box">
-                <div class="note-box-title">{{ group.name }}</div>
+                                <div class="note-box-title">{{ group.name }}</div>
                 {% for note in notes %}
-                {% if note.group and note.group.id == group.id %}
-                <div class="note">
-                    <p><strong>{{ note.content }}</strong></p>
-                    <span class="note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
-                    <a href="{{ url_for('delete_note', note_id=note.id) }}"><span class="note-details">Delete</span></a>
-                </div>
-            {% endif %}
+                    {% if note.group and note.group.id == group.id %}
+                        <div class="note">
+                            <p><strong>{{ note.content }}</strong></p>
+                            <span class="note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
+                            <a href="{{ url_for('delete_note', note_id=note.id) }}"><span class="note-details">Delete</span></a>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
         {% endfor %}
     </div>
-{% endfor %}
-</div>
-
-<br>
-<a href="{{ url_for('members') }}" class="btn btn-info">Manage Members</a>
-<br>
-<a href="{{ url_for('groups') }}" class="btn btn-info mt-2">Manage Groups</a>
-<br>
-<a href="{{ url_for('logout') }}" class="btn btn-danger mt-2">Logout</a>
+    <br>
+    <br>
+    {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('members') }}" class="btn btn-info">Manage Members</a>
+    {% endif %}
+    {% if current_user.role != 'admin' %}
+        <a href="{{ url_for('view_members') }}" class="btn btn-info">View Members</a>
+    {% endif %}
+    <br>
+    <a href="{{ url_for('groups') }}" class="btn btn-info mt-2">Manage Groups</a>
+    <br>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger mt-2">Logout</a>
 </div>
 {% endblock %}
 

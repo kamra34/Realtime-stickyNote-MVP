@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>All Members</h1>
+    {% if admin %}
+        <a href="{{ url_for('members') }}" class="btn btn-info mt-2">Manage Members</a>
+    {% endif %}
+    <ul>
+        {% for member in members %}
+        <li class="mb-2">
+            {% if member.is_admin == 1 %}
+                (Admin) {{ member.name }}
+            {% else %}
+                {{ member.name }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
