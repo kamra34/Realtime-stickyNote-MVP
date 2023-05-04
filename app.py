@@ -18,7 +18,7 @@ if 'PYTHONANYWHERE_DOMAIN' in os.environ:
     username="imak02",
     password="44pass44",
     hostname="imak02.mysql.eu.pythonanywhere-services.com",
-    databasename="imak02$ungm",
+    databasename="imak02$mvp",
     )
     app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_POOL_RECYCLE"] = 299
