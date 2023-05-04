@@ -63,6 +63,9 @@ We need to thoroughly test our web app to identify and fix any bugs or issues. T
 ## MVP Deployment
 We need to set up a hosting service and deploy the web app so users can access it online.
 
+### Deployment on PythonAnywhere
+The MVP has been successfully deployed on PythonAnywhere. PythonAnywhere is a web hosting service specifically designed for Python web applications. You can access the MVP online at the following URL: http://imak02.eu.pythonanywhere.com/login
+
 
 ## User Feedback Collection
 We need to encourage users to provide feedback on our MVP. We should use their input to make improvements and prioritize new features for future development.
