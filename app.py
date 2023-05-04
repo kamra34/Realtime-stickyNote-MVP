@@ -126,6 +126,15 @@ def unauthorized():
 def home():
     return redirect(url_for('login'))
 
+def create_uncategorized_group(user_id):
+    uncategorized_group = Group.query.filter_by(user_id=user_id, name="Uncategorized").first()
+    if not uncategorized_group:
+        uncategorized_group = Group(name="Uncategorized", user_id=user_id)
+        db.session.add(uncategorized_group)
+        db.session.commit()
+    return uncategorized_group
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -144,23 +153,16 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
+        # Create the Uncategorized group after registering the new admin
+        create_uncategorized_group(new_user.id)
+
         flash('Registration successful, please log in')
-        
+
         # Log out the current user before redirecting to the login page
         logout_user()
         return redirect(url_for('login'))
 
     return render_template('register.html')
-
-def validate_login(email, password):
-    user = User.query.filter_by(email=email).first()
-    if user and user.check_password(password):
-        return user
-    else:
-        member = Member.query.filter_by(email=email).first()
-        if member and member.check_password(password):
-            return member
-    return None
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -199,10 +201,20 @@ def logout():
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
+    if isinstance(current_user, User):
+        user_id = current_user.id
+        members = current_user.members
+    else:
+        user_id = current_user.user.id
+        members = Member.query.filter_by(user_id=user_id).all()
+
     if request.method == 'POST':
-        if request.method == 'POST':
-            note_content = request.form.get('content')
-            group_id = request.form.get('group_id')
+        note_content = request.form.get('content')
+        group_id = request.form.get('group_id')
+
+        if group_id == "":
+            uncategorized_group = Group.query.filter_by(user_id=user_id, name="Uncategorized").first()
+            group_id = uncategorized_group.id
 
         if isinstance(current_user, Member):
             member_id = current_user.id
@@ -235,10 +247,26 @@ def dashboard():
 
     visible_user_ids = [user_id] + member_user_ids
     groups = Group.query.filter(Group.user_id.in_(visible_user_ids)).order_by(Group.name.asc()).all()
+
+    # Check if "Uncategorized" group is in the groups list, if not add it
+    uncategorized_group = None
+    for group in groups:
+        if group.name == "Uncategorized":
+            uncategorized_group = group
+            break
+
+    if not uncategorized_group:
+        uncategorized_group = Group(name="Uncategorized", user_id=user_id)
+        db.session.add(uncategorized_group)
+        db.session.commit()
+        groups.append(uncategorized_group)
+
     group_ids = [group.id for group in groups]
-    notes = Note.query.filter(Note.group_id.in_(group_ids)).order_by(Note.date_created.desc()).all()
+    notes = Note.query.filter((Note.group_id.in_(group_ids)) | (Note.group_id == None)).order_by(Note.date_created.desc()).all()
 
     return render_template('dashboard.html', notes=notes, groups=groups, members=members)
+
+    
 
 @app.route('/groups', methods=['GET', 'POST'])
 @login_required
@@ -267,6 +295,19 @@ def groups():
     member_user_ids = [member.user_id for member in members]
     visible_user_ids = [user_id] + member_user_ids
     groups = Group.query.filter(Group.user_id.in_(visible_user_ids)).order_by(Group.name.asc()).all()
+
+    # Check if "Uncategorized" group is in the groups list, if not add it
+    uncategorized_group = None
+    for group in groups:
+        if group.name == "Uncategorized":
+            uncategorized_group = group
+            break
+
+    if not uncategorized_group:
+        uncategorized_group = Group(name="Uncategorized", user_id=user_id)
+        db.session.add(uncategorized_group)
+        db.session.commit()
+        groups.append(uncategorized_group)
 
     return render_template('groups.html', groups=groups)
 

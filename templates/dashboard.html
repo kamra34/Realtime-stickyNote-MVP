@@ -64,23 +64,11 @@
 
     <h2>Your Notes:</h2>
     <div class="note-box-container">
-        <div class="note-box">
-            <div class="note-box-title">Uncategorized</div>
-            {% for note in notes %}
-                {% if not note.group %}
-                    <div class="note">
-                        <p><strong>{{ note.content }}</strong></p>
-                        <span class="note-details">Created by {{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
-                        <a href="{{ url_for('delete_note', note_id=note.id) }}">Delete</a>
-                    </div>
-                {% endif %}
-            {% endfor %}
-        </div>
         {% for group in groups %}
             <div class="note-box">
-                                <div class="note-box-title">{{ group.name }}</div>
+                <div class="note-box-title">{{ group.name }}</div>
                 {% for note in notes %}
-                    {% if note.group and note.group.id == group.id %}
+                    {% if (note.group and note.group.id == group.id) or (group.name == "Uncategorized" and not note.group_id)%}
                         <div class="note">
                             <p><strong>{{ note.content }}</strong></p>
                             <span class="note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
