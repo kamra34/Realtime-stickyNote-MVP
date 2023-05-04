@@ -200,14 +200,15 @@ def logout():
 @login_required
 def dashboard():
     if request.method == 'POST':
-        note_content = request.form.get('content')
-        group_id = request.form.get('group_id')
-        member_id = request.form.get('member_id')
-        if not member_id:
-            if isinstance(current_user, User):
-                member_id = current_user.members[0].id
-            else:
-                member_id = current_user.id
+        if request.method == 'POST':
+            note_content = request.form.get('content')
+            group_id = request.form.get('group_id')
+
+        if isinstance(current_user, Member):
+            member_id = current_user.id
+        else:
+            member_id = current_user.members[0].id
+
         new_note = Note(content=note_content, user_id=current_user.id, group_id=group_id, member_id=member_id)
         db.session.add(new_note)
         db.session.commit()
