@@ -9,10 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from functools import wraps
 import time
-from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-socketio = SocketIO(app)
 app.config['SECRET_KEY'] = 'your_secret_key'
 
 if 'PYTHONANYWHERE_DOMAIN' in os.environ:
@@ -228,7 +226,6 @@ def dashboard():
         new_note = Note(content=note_content, user_id=note_user_id, group_id=group_id, member_id=member_id)
         db.session.add(new_note)
         db.session.commit()
-        socketio.emit('new_note', {'note_id': new_note.id})
         flash('Note added successfully')
         return redirect(url_for('dashboard'))
 
