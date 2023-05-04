@@ -218,10 +218,12 @@ def dashboard():
 
         if isinstance(current_user, Member):
             member_id = current_user.id
+            note_user_id = current_user.user_id
         else:
             member_id = current_user.members[0].id
+            note_user_id = current_user.id
 
-        new_note = Note(content=note_content, user_id=current_user.id, group_id=group_id, member_id=member_id)
+        new_note = Note(content=note_content, user_id=note_user_id, group_id=group_id, member_id=member_id)
         db.session.add(new_note)
         db.session.commit()
         flash('Note added successfully')
