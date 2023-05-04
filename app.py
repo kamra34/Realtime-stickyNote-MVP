@@ -220,18 +220,20 @@ def dashboard():
         members = Member.query.filter_by(user_id=current_user.user.id).all()
 
     if not members:
-        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id, is_admin =1)
+        new_member = Member(name=current_user.name, email=current_user.email, password=current_user.password, user_id=current_user.id, is_admin=1)
         db.session.add(new_member)
         db.session.commit()
         members = [new_member]
 
     if isinstance(current_user, User):
         user_id = current_user.id
+        member_user_ids = [member.user_id for member in members]
     else:
         user_id = current_user.user.id
+        member_user_ids = []
 
-    # Update the notes and groups queries to display only notes and groups related to the current user
-    groups = Group.query.filter_by(user_id=user_id).all()
+    visible_user_ids = [user_id] + member_user_ids
+    groups = Group.query.filter(Group.user_id.in_(visible_user_ids)).order_by(Group.name.asc()).all()
     group_ids = [group.id for group in groups]
     notes = Note.query.filter(Note.group_id.in_(group_ids)).order_by(Note.date_created.desc()).all()
 
@@ -241,19 +243,32 @@ def dashboard():
 @login_required
 def groups():
     if request.method == 'POST':
-        group_name = request.form.get('group_name')
+        group_name = request.form['group_name']
+
         if isinstance(current_user, User):
-            user_id = current_user.id
+            creator_id = current_user.id
         else:
-            user_id = current_user.user.id
-        new_group = Group(name=group_name, user_id=user_id)
+            creator_id = current_user.user.id
+
+        new_group = Group(name=group_name, user_id=creator_id)
         db.session.add(new_group)
         db.session.commit()
         flash('Group added successfully')
         return redirect(url_for('groups'))
 
-    groups = Group.query.filter_by(user_id=current_user.id).all()
+    if isinstance(current_user, User):
+        user_id = current_user.id
+        members = current_user.members
+    else:
+        user_id = current_user.user.id
+        members = Member.query.filter_by(user_id=user_id).all()
+
+    member_user_ids = [member.user_id for member in members]
+    visible_user_ids = [user_id] + member_user_ids
+    groups = Group.query.filter(Group.user_id.in_(visible_user_ids)).order_by(Group.name.asc()).all()
+
     return render_template('groups.html', groups=groups)
+
 
 @app.route('/members', methods=['GET', 'POST'])
 @login_required
@@ -353,6 +368,9 @@ def delete_note(note_id):
 @app.route('/delete_group/<int:group_id>', methods=['GET', 'POST'])
 @login_required
 def delete_group(group_id):
+    if not current_user.role == 'admin':
+        abort(403)
+
     group = Group.query.get_or_404(group_id)
 
     if request.method == 'POST':
