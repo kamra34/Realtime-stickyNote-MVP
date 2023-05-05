@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!--<div id="eink-container">
+    {% for group in groups %}
+    <div class="eink-group">
+      <h2 style="color: rgb(249, 246, 246); text-align: center; font-size: 1.5em; font-family: Arial, sans-serif;">{{
+        group.name }}</h2>
+      {% for note in group.notes %}
+      <div class="eink-note">
+        <h3>{{ note.title }}</h3>
+        <p><strong>{{ note.content }}</strong>
+          <span class="note-details">, {{ note.member.name if note.member else 'Unknown' }} at {{
+            note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span>
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}-->
+    <ebody>
+      <div class="note-box-container">
+        {% for group in groups %}
+            <div class="note-box">
+                <div class="note-box-title">{{ group.name }}</div>
+                {% for note in group.notes %}
+                    {% if (note.group and note.group.id == group.id) or (group.name == "Uncategorized" and not note.group_id)%}
+                        <div class="note">
+                            <p><strong>{{ note.content }}</strong>, 
+                            <span class="note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span></p>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <br>
+    <!--<a href="{{ url_for('logout') }}" class="btn btn-danger mt-2">Logout</a>-->
+  </div>
+  </body>
+{% endblock %}
+{% block styles %}
+  <style>
+    body {
+      background-color: #0f0f0f; /* Set the background color of the page */
+    }
+  </style>
+{% endblock %}

@@ -1,0 +1,125 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 40px;
+}
+
+form {
+    margin-bottom: 2em;
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    resize: vertical;
+}
+
+.notes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1em;
+}
+
+.note {
+    border: 1px solid #ccc;
+    padding: 1em;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    margin-bottom: 1rem;
+}
+
+.note-details {
+    font-size: 1em !important;
+}
+
+
+.note small {
+    display: block;
+    font-size: 0.8em;
+    margin-top: 1em;
+}
+
+.note-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.note-box::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+}
+
+.note-box::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+}
+
+.eink-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1em;
+}
+
+.note-box-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.note-box {
+    background-color: #ccc;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+    flex: 1;
+    width: calc((100% - 60px) / 3); /* Set the width to 33.33% - 20px gap */
+    /* min-width: calc(20% - 20px);*/
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.note-box-title {
+    font-size: 1em;
+    font-weight: italic;
+    margin-bottom: 8px;
+    text-align: center;
+    font-family: 'Helvetica Neue', sans-serif;
+}
+.note {
+    margin-bottom: 1rem;
+}
+.note-details {
+font-size: 0.5em !important;
+}
+
+.eink-group {
+    border: 2px solid rgb(243, 240, 240);
+    padding: 0.1em;
+    border-radius: 2px;
+    background-color: rgb(59, 58, 58);
+    margin-bottom: 0.3rem;   
+}
+
+.eink-group h3 {
+    margin-top: 0;
+    font-size: 0.1em;
+}
+
+.eink-note {
+    font-size: 0.8em;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    border: 1px solid #ccc;
+    padding: 1em;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    margin-bottom: 1rem;
+}
+
+.eink-members {
+    font-size: 1.2em;
+    font-style: italic;
+}
+
+.eink-body {
+  background-color: #f5f5f5; /* Set the background color of the page */
+}

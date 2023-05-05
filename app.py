@@ -37,6 +37,7 @@ login_manager.login_message_category = 'info'
 # Set the Anonymous class as the AnonymousUser for your LoginManager
 #login_manager.anonymous_user = Anonymous
 
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -431,6 +432,50 @@ def delete_group(group_id):
             return redirect(url_for('groups'))
 
     return render_template('delete_group.html', group=group)
+
+@app.route('/eink-login', methods=['GET', 'POST'])
+def eink_login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+
+        if user is None:
+            member = Member.query.filter_by(email=email).first()
+            if member is None:
+                flash('Login Unsuccessful. Please check your email and password', 'danger')
+                return redirect(url_for('eink_login'))
+            elif member.check_password(password):
+                print("Logging in as Member:", member)
+                login_user(member)
+                return redirect(url_for('eink'))
+        elif user.check_password(password):
+            print("Logging in as User:", user)
+            login_user(user)
+            return redirect(url_for('eink'))
+        else:
+            flash('Login Unsuccessful. Please check your email and password', 'danger')
+
+    return render_template('eink_login.html')
+
+@app.route('/eink')
+@login_required
+def eink():
+    # Fetch the members associated with the current user
+    if isinstance(current_user, User):
+        members = current_user.members
+    else:
+        members = Member.query.filter_by(user_id=current_user.user.id).all()
+
+    # Get the list of user IDs for which the current user is a member or admin
+    user_id = current_user.id if isinstance(current_user, User) else current_user.user.id
+    member_user_ids = [member.user_id for member in members]
+
+    visible_user_ids = [user_id] + member_user_ids
+    groups = Group.query.filter(Group.user_id.in_(visible_user_ids)).order_by(Group.name.asc()).all()
+
+    # Render the eink.html template and pass the groups to it
+    return render_template('eink.html', groups=groups)
 
 if __name__ == '__main__':
     app.run(debug=True)
