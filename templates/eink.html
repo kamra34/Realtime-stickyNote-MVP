@@ -18,15 +18,15 @@
     </div>
     {% endfor %}-->
     <ebody>
-      <div class="note-box-container">
+      <div class="eink-note-box-container">
         {% for group in groups %}
-            <div class="note-box">
-                <div class="note-box-title">{{ group.name }}</div>
+            <div class="eink-note-box">
+                <div class="eink-note-box-title">{{ group.name }}</div>
                 {% for note in group.notes %}
                     {% if (note.group and note.group.id == group.id) or (group.name == "Uncategorized" and not note.group_id)%}
-                        <div class="note">
+                        <div class="eink-note">
                             <p><strong>{{ note.content }}</strong>, 
-                            <span class="note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span></p>
+                            <span class="eink-note-details">{{ note.member.name if note.member else 'Unknown' }} at {{ note.date_created.strftime('%Y-%m-%d %H:%M:%S')}}</span></p>
                         </div>
                     {% endif %}
                 {% endfor %}
